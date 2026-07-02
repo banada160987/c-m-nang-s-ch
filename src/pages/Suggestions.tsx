@@ -24,7 +24,7 @@ export const Suggestions: React.FC = () => {
   }
 
   if (activeAge) {
-    const books = allBooks.filter(b => b.age === activeAge);
+    const books = allBooks.filter(b => b.age === activeAge && (b.content?.trim() || b.pdfUrl?.trim()));
     return (
       <div className="p-4 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
         <button 
