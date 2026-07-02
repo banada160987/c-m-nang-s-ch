@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "ReadableBook": {
+      "title": "Readable Book",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "content": { "type": "string" }
+      },
+      "required": ["title", "author", "content"]
+    },
+    "SuggestedBook": {
+      "title": "Suggested Book",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "age": { "type": "string" },
+        "cat": { "type": "string" },
+        "desc": { "type": "string" }
+      },
+      "required": ["title", "author", "age", "cat", "desc"]
+    }
+  },
+  "firestore": {
+    "/readable_books/{bookId}": {
+      "schema": { "$ref": "#/entities/ReadableBook" }
+    },
+    "/suggested_books/{bookId}": {
+      "schema": { "$ref": "#/entities/SuggestedBook" }
+    }
+  }
+}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn Cập Nhật Firebase Rules</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0fdf4;
+            color: #1e293b;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-top: 8px solid #10b981;
+        }
+        h1 {
+            color: #10b981;
+            font-size: 28px;
+            margin-top: 0;
+            text-align: center;
+        }
+        h2 {
+            color: #f59e0b;
+            font-size: 22px;
+            margin-top: 30px;
+            border-bottom: 2px solid #fef3c7;
+            padding-bottom: 10px;
+        }
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+        .step-number {
+            background-color: #8b5cf6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .step-content p {
+            margin-top: 4px;
+        }
+        .code-block {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            overflow-x: auto;
+            border-left: 5px solid #10b981;
+            margin: 15px 0;
+            position: relative;
+        }
+        .highlight {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+        .warning {
+            background-color: #fffbeb;
+            border-left: 5px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hướng Dẫn Mở Khóa Tính Năng (Firebase Rules)</h1>
+    
+    <div class="warning">
+        ⚠️ Lưu ý: Bạn BẮT BUỘC phải thực hiện các bước này thì học sinh mới có thể ghi điểm lên Bảng Xếp Hạng và viết Cảm Nhận Sách được. Nếu không, hệ thống sẽ báo lỗi.
+    </div>
+
+    <h2>Các bước thực hiện:</h2>
+
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <strong>Đăng nhập vào Firebase</strong>
+            <p>Truy cập vào trang chủ Firebase: <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a> và đăng nhập bằng tài khoản Gmail của bạn (tài khoản đã tạo dự án này).</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <strong>Mở cơ sở dữ liệu Firestore</strong>
+            <p>Trong menu bên trái, tìm mục <strong>Build</strong> (Xây dựng) và bấm chọn <strong>Firestore Database</strong>.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <strong>Chuyển sang tab Rules (Quy tắc)</strong>
+            <p>Nhìn lên phía trên màn hình, bạn sẽ thấy tab <strong>Rules</strong> nằm ngay cạnh tab <i>Data</i>. Bấm vào đó.</p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+            <strong>Dán mã cấp quyền</strong>
+            <p>Hãy copy đoạn mã màu xanh nhạt dưới đây và dán bổ sung vào bên trong cấu trúc Rules (dưới các dòng match cũ của bạn).</p>
+            <p>Mã cần thêm:</p>
+            <div class="code-block">
+    <span class="highlight">match /reviews/{reviewId} {</span>
+      <span class="highlight">allow read, write: if true;</span>
+    <span class="highlight">}</span>
+    <span class="highlight">match /leaderboard/{userId} {</span>
+      <span class="highlight">allow read, write: if true;</span>
+    <span class="highlight">}</span>
+            </div>
+            <p><i>* Mẹo: Cứ dán nó vào ngay bên trên dấu ngoặc nhọn đóng cuối cùng <code>}</code> của toàn bộ file.</i></p>
+        </div>
+    </div>
+
+    <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+            <strong>Xuất bản (Publish)</strong>
+            <p>Bấm vào nút <strong>Publish</strong> màu xanh dương ở góc trên bên phải khung soạn thảo. Đợi 1 phút để hệ thống cập nhật.</p>
+            <p>🎉 Xong! Bây giờ ứng dụng Cẩm Nang Sách của bạn đã hoạt động trơn tru 100%.</p>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
