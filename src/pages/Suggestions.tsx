@@ -24,7 +24,12 @@ export const Suggestions: React.FC = () => {
   }
 
   if (activeAge) {
-    const books = allBooks.filter(b => b.age === activeAge && (b.content?.trim() || b.pdfUrl?.trim()));
+    const books = allBooks.filter(b => {
+      if (b.age !== activeAge) return false;
+      const hasContent = b.content && b.content.replace(/<[^>]*>?/gm, '').trim() !== '';
+      const hasPdf = b.pdfUrl && b.pdfUrl.trim() !== '';
+      return hasContent || hasPdf;
+    });
     return (
       <div className="p-4 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
         <button 
@@ -65,7 +70,7 @@ export const Suggestions: React.FC = () => {
     <div className="p-4 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center py-10 relative">
         <div className="text-5xl mb-4 animate-bounce" style={{ animationDuration: '3s' }}>💌</div>
-        <h1 className="text-4xl md:text-5xl font-serif font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent mb-4 drop-shadow-sm">Cẩm Nang Đọc Sách</h1>
+        <h1 className="text-4xl md:text-5xl font-serif font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent mb-4 drop-shadow-sm">Cẩm Nang Đọc Sách (Đã cập nhật)</h1>
         <p className="text-lg text-muted font-semibold">Chọn độ tuổi để khám phá hộp thư sách gợi ý bí mật nhé!</p>
       </div>
 
