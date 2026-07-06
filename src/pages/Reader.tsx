@@ -22,6 +22,11 @@ export const Reader: React.FC = () => {
   const [newReviewText, setNewReviewText] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   
+  // AI Chat state
+  const [chatMessages, setChatMessages] = useState<{role: 'user'|'ai', text: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const endMarkRef = useRef<HTMLDivElement>(null);
   const sessionStartRef = useRef<number>(Date.now());
@@ -213,6 +218,35 @@ export const Reader: React.FC = () => {
     setIsSubmittingReview(false);
   };
 
+  const handleAskAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isAiLoading) return;
+
+    const userMessage = chatInput.trim();
+    setChatMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setChatInput('');
+    setIsAiLoading(true);
+
+    try {
+      const bookContext = `Tên sách: ${book?.title}\nTác giả: ${book?.author}\nMô tả: ${book?.desc}\nNội dung (một phần): ${book?.content ? book.content.substring(0, 1000) : 'Không có'}`;
+      const res = await fetch('/api/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: userMessage, context: bookContext })
+      });
+      
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      
+      setChatMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+    } catch (error) {
+      console.error(error);
+      setChatMessages(prev => [...prev, { role: 'ai', text: "Xin lỗi, AI đang bận hoặc bị lỗi kết nối. Bạn thử lại sau nhé!" }]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto pb-32 animate-in fade-in">
       <audio ref={audioRef} className="hidden" />
@@ -290,8 +324,70 @@ export const Reader: React.FC = () => {
 
       <div ref={endMarkRef} className="h-4 mt-20"></div>
 
+      {/* AI Chat Section */}
+      <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-indigo-100 dark:border-indigo-900/50">
+        <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-indigo-700 dark:text-indigo-400">
+          <span className="text-2xl">🤖</span> Trợ lý AI (Hỏi đáp về sách)
+        </h2>
+        
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-inner mb-4 overflow-hidden border border-slate-100 dark:border-slate-800">
+          <div className="h-[300px] overflow-y-auto p-4 space-y-4">
+            {chatMessages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-70">
+                <span className="text-4xl">✨</span>
+                <p>Hãy hỏi tôi bất kỳ điều gì về cuốn sách này!</p>
+                <p className="text-sm">VD: "Hãy tóm tắt ngắn gọn cuốn sách"</p>
+              </div>
+            ) : (
+              chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl p-4 ${
+                    msg.role === 'user' 
+                      ? 'bg-indigo-600 text-white rounded-br-none' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-ink rounded-bl-none'
+                  }`}>
+                    {msg.role === 'ai' ? (
+                      <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
+                    ) : (
+                      msg.text
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            {isAiLoading && (
+              <div className="flex justify-start">
+                <div className="bg-slate-100 dark:bg-slate-800 text-ink rounded-2xl rounded-bl-none p-4 flex gap-1">
+                  <span className="animate-bounce inline-block w-2 h-2 bg-indigo-500 rounded-full"></span>
+                  <span className="animate-bounce inline-block w-2 h-2 bg-indigo-500 rounded-full" style={{animationDelay: '0.2s'}}></span>
+                  <span className="animate-bounce inline-block w-2 h-2 bg-indigo-500 rounded-full" style={{animationDelay: '0.4s'}}></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <form onSubmit={handleAskAI} className="relative">
+          <input 
+            type="text" 
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            disabled={isAiLoading}
+            placeholder="Bạn muốn hỏi gì về cuốn sách này?"
+            className="w-full bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-900 rounded-full py-4 pl-6 pr-16 outline-none focus:border-indigo-500 transition-colors text-ink shadow-sm disabled:opacity-70"
+          />
+          <button 
+            type="submit" 
+            disabled={isAiLoading || !chatInput.trim()}
+            className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white rounded-full w-10 md:w-12 flex items-center justify-center hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={18} className={isAiLoading ? 'animate-pulse' : ''} />
+          </button>
+        </form>
+      </div>
+
       {/* Reviews Section */}
-      <div className="mt-16 bg-surface rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="mt-8 bg-surface rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
         <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6">
           <MessageCircle className="text-primary" /> Góc Cảm Nhận
         </h2>

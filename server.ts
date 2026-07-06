@@ -66,6 +66,40 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ask-ai", async (req, res) => {
+    try {
+      const { text, context } = req.body;
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      const prompt = `Bạn là trợ lý AI của web đọc sách "Cẩm Nang Sách". Dưới đây là bối cảnh của cuốn sách người dùng đang đọc:\n\n${context}\n\nHãy trả lời câu hỏi sau của người dùng một cách thân thiện, ngắn gọn và hữu ích:\n\nCâu hỏi: ${text}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      res.json({ reply: response.text });
+    } catch (error) {
+      console.error("Ask AI Error:", error);
+      res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
