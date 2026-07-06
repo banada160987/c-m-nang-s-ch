@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { Book } from '../types';
@@ -47,4 +47,8 @@ export const uploadPdf = async (file: File, onProgress?: (p: number) => void): P
   const downloadUrl = await getDownloadURL(storageRef);
   if (onProgress) onProgress(100);
   return downloadUrl;
+};
+
+export const deleteBook = async (collectionName: string, bookId: string): Promise<void> => {
+  await deleteDoc(doc(db, collectionName, bookId));
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { addBook, uploadPdf } from '../services/bookService';
+import { addBook, uploadPdf, getReadableBooks, getSuggestedBooks, deleteBook } from '../services/bookService';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Unlock } from 'lucide-react';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
@@ -18,11 +18,16 @@ export const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('');
+  
+  // State for uploaded books
+  const [uploadedBooks, setUploadedBooks] = useState<{id: string, title: string, author: string, col: string}[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsAuthenticated(true);
+        loadBooks();
       } else {
         setIsAuthenticated(false);
       }
@@ -30,6 +35,36 @@ export const Admin: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  const loadBooks = async () => {
+    setLoadingBooks(true);
+    try {
+      const readable = await getReadableBooks();
+      const suggested = await getSuggestedBooks();
+      
+      const all = [
+        ...readable.map(b => ({ id: b.id, title: b.title, author: b.author, col: 'readable_books' })),
+        ...suggested.map(b => ({ id: b.id, title: b.title, author: b.author, col: 'suggested_books' }))
+      ];
+      setUploadedBooks(all);
+    } catch (err) {
+      console.error('Failed to load books', err);
+    } finally {
+      setLoadingBooks(false);
+    }
+  };
+
+  const handleDeleteBook = async (col: string, id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa sách này không? Hành động này không thể hoàn tác!')) return;
+    try {
+      await deleteBook(col, id);
+      setUploadedBooks(prev => prev.filter(b => !(b.id === id && b.col === col)));
+      alert('Đã xóa sách thành công!');
+    } catch (err) {
+      console.error('Error deleting book', err);
+      alert('Lỗi khi xóa sách. Vui lòng thử lại!');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,9 +309,54 @@ export const Admin: React.FC = () => {
           disabled={loading}
           className="mt-8 w-full bg-gradient-to-r from-primary to-accent text-white font-bold text-xl py-4 rounded-2xl shadow-lg shadow-primary/30 transition-transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
         >
-          {loading ? 'Đang xử lý...' : '🚀 Tải Sách Lên Hệ Thống'}
+          {loading ? 'Đang xử lý...' : '📚 Tải Sách Lên Hệ Thống'}
         </button>
       </form>
+
+      {/* Danh sách sách đã đăng */}
+      <div className="mt-12 bg-surface p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm max-w-5xl mx-auto mb-16">
+        <h3 className="text-2xl font-serif font-bold text-primary mb-6 flex items-center gap-2">
+          <span>📋</span> Quản lý sách đã đăng
+        </h3>
+        
+        {loadingBooks ? (
+          <div className="text-center py-8 text-muted">Đang tải danh sách sách...</div>
+        ) : uploadedBooks.length === 0 ? (
+          <div className="text-center py-8 text-muted">Chưa có sách nào trên hệ thống.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b-2 border-slate-200 dark:border-slate-700">
+                  <th className="p-3 font-bold text-slate-600 dark:text-slate-300">Tên sách</th>
+                  <th className="p-3 font-bold text-slate-600 dark:text-slate-300">Tác giả</th>
+                  <th className="p-3 font-bold text-slate-600 dark:text-slate-300">Mục lưu</th>
+                  <th className="p-3 font-bold text-slate-600 dark:text-slate-300 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadedBooks.map(book => (
+                  <tr key={`${book.col}-${book.id}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="p-3 font-medium">{book.title}</td>
+                    <td className="p-3 text-muted">{book.author}</td>
+                    <td className="p-3 text-sm text-muted">
+                      {book.col === 'readable_books' ? 'Kho sách chung' : 'Cẩm nang'}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button 
+                        onClick={() => handleDeleteBook(book.col, book.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
