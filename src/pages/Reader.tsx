@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send } from 'lucide-react';
+import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getReviews, addReview, BookReview } from '../services/reviewService';
 
@@ -305,9 +305,9 @@ export const Reader: React.FC = () => {
             disabled={ttsStatus === 'loading' || isPlayingGlobal}
             className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-full font-bold shadow-md shadow-accent/20 hover:shadow-lg transition-all active:scale-95 disabled:opacity-70"
           >
-            {ttsStatus === 'idle' && !isPlayingGlobal && <span>🔊 Nghe AI Đọc</span>}
-            {ttsStatus === 'loading' && <span>⏳ Đang tạo...</span>}
-            {isPlayingGlobal && <span>🎧 Đang phát nền</span>}
+            {ttsStatus === 'idle' && !isPlayingGlobal && <><Headphones size={20} /><span>Nghe AI Đọc</span></>}
+            {ttsStatus === 'loading' && <><Sparkles size={20} className="animate-pulse" /><span>Đang tạo...</span></>}
+            {isPlayingGlobal && <><Mic size={20} className="animate-bounce" /><span>Đang phát nền</span></>}
           </button>
         )}
       </div>
@@ -341,14 +341,14 @@ export const Reader: React.FC = () => {
       {/* AI Chat Section */}
       <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-indigo-100 dark:border-indigo-900/50">
         <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-indigo-700 dark:text-indigo-400">
-          <span className="text-2xl">🤖</span> Trợ lý AI (Hỏi đáp về sách)
+          <Bot size={28} className="text-indigo-600 dark:text-indigo-400" /> Trợ lý AI (Hỏi đáp về sách)
         </h2>
         
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-inner mb-4 overflow-hidden border border-slate-100 dark:border-slate-800">
           <div className="h-[300px] overflow-y-auto p-4 space-y-4">
             {chatMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-70">
-                <span className="text-4xl">✨</span>
+                <Bot size={48} className="opacity-50 mb-2" />
                 <p>Hãy hỏi tôi bất kỳ điều gì về cuốn sách này!</p>
                 <p className="text-sm">VD: "Hãy tóm tắt ngắn gọn cuốn sách"</p>
               </div>
@@ -468,7 +468,7 @@ export const Reader: React.FC = () => {
       {showGamification && (
         <div className="mt-8 bg-gradient-to-tr from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-emerald-100 dark:border-emerald-900/50">
           <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-emerald-700 dark:text-emerald-400">
-            <span className="text-2xl">🎯</span> Thử Thách Trí Tuệ (AI Quiz)
+            <BrainCircuit size={28} className="text-emerald-600 dark:text-emerald-400" /> Thử Thách Trí Tuệ (AI Quiz)
           </h2>
           
           {!quizData && !isQuizLoading && (
