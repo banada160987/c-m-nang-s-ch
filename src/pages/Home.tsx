@@ -19,12 +19,19 @@ export const Home: React.FC = () => {
     { id: '11-15', label: '11-15 tuổi' }
   ];
 
+  const removeAccents = (str: string) => {
+    if (!str) return '';
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  };
+
   const filteredBooks = useMemo(() => {
+    const term = removeAccents(searchTerm.toLowerCase());
     return readableBooks.filter(b => {
       const matchCat = category === 'All' || b.cat === category;
       const matchAge = age === 'All' || b.age === age;
-      const matchSearch = b.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          b.author.toLowerCase().includes(searchTerm.toLowerCase());
+      const t = removeAccents((b.title || '').toLowerCase());
+      const a = removeAccents((b.author || '').toLowerCase());
+      const matchSearch = t.includes(term) || a.includes(term);
       return matchCat && matchAge && matchSearch;
     });
   }, [readableBooks, searchTerm, category, age]);
