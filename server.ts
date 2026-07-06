@@ -89,7 +89,7 @@ async function startServer() {
       const prompt = `Bạn là trợ lý AI của web đọc sách "Cẩm Nang Sách". Dưới đây là bối cảnh của cuốn sách người dùng đang đọc:\n\n${context}\n\nHãy trả lời câu hỏi sau của người dùng một cách thân thiện, ngắn gọn và hữu ích:\n\nCâu hỏi: ${text}`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: prompt,
       });
 
@@ -97,6 +97,57 @@ async function startServer() {
     } catch (error) {
       console.error("Ask AI Error:", error);
       res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  app.post("/api/generate-quiz", async (req, res) => {
+    try {
+      const { context } = req.body;
+      if (!context) {
+        return res.status(400).json({ error: "Context is required" });
+      }
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      const prompt = `Dựa vào nội dung sách sau đây, hãy tạo ra đúng 3 câu hỏi trắc nghiệm để kiểm tra kiến thức người đọc.
+Mỗi câu hỏi phải có 4 đáp án (A, B, C, D) và chỉ định rõ đáp án đúng.
+Trả về dữ liệu dưới định dạng mảng JSON thuần túy (không có markdown).
+Format yêu cầu:
+[
+  {
+    "question": "Nội dung câu hỏi?",
+    "options": ["A. Đáp án 1", "B. Đáp án 2", "C. Đáp án 3", "D. Đáp án 4"],
+    "correctIndex": 0
+  }
+]
+
+Nội dung sách:
+${context}
+`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+      });
+
+      let text = response.text || "[]";
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      res.json(JSON.parse(text));
+    } catch (error) {
+      console.error("Generate Quiz Error:", error);
+      res.status(500).json({ error: "Failed to generate quiz" });
     }
   });
 
@@ -135,8 +186,9 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  const portNum = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
+  app.listen(portNum, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${portNum}`);
   });
 }
 

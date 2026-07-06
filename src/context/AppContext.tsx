@@ -19,6 +19,9 @@ interface AppContextType {
   userName: string;
   setUserName: (name: string) => void;
   userId: string;
+  dailyStats: Record<string, number>;
+  globalAudio: { url: string | null, title: string, bookId: string };
+  setGlobalAudio: (audio: { url: string | null, title: string, bookId: string }) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +46,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { minutes: 0, books: 0 };
     }
   });
+
+  const [dailyStats, setDailyStats] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('dailyStats') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  const [globalAudio, setGlobalAudio] = useState<{ url: string | null, title: string, bookId: string }>({ url: null, title: '', bookId: '' });
 
   const [lastReadBookId, setLastReadBookIdState] = useState<string | null>(() => {
     return localStorage.getItem('lastReadBookId');
@@ -121,6 +134,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       return newStats;
     });
+
+    if (minutes > 0) {
+      setDailyStats(prev => {
+        const today = new Date().toISOString().split('T')[0];
+        const newDaily = { ...prev, [today]: (prev[today] || 0) + minutes };
+        localStorage.setItem('dailyStats', JSON.stringify(newDaily));
+        return newDaily;
+      });
+    }
   };
 
   const setLastReadBookId = (id: string) => {
@@ -155,7 +177,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       allBooks,
       userName,
       setUserName,
-      userId
+      userId,
+      dailyStats,
+      globalAudio,
+      setGlobalAudio
     }}>
       {children}
     </AppContext.Provider>

@@ -9,11 +9,10 @@ export const Reader: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation(); // To know where to go back
-  const { allBooks, favorites, toggleFavorite, darkMode, toggleDarkMode, setLastReadBookId, updateStats, userName } = useAppContext();
+  const { allBooks, favorites, toggleFavorite, darkMode, toggleDarkMode, setLastReadBookId, updateStats, userName, globalAudio, setGlobalAudio } = useAppContext();
   
   const [fontSize, setFontSize] = useState(1.1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [ttsStatus, setTtsStatus] = useState<'idle' | 'loading' | 'playing'>('idle');
+  const [ttsStatus, setTtsStatus] = useState<'idle' | 'loading'>('idle');
   const [showControls, setShowControls] = useState(true);
   const [showGamification, setShowGamification] = useState(false);
   
@@ -27,13 +26,20 @@ export const Reader: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Quiz state
+  const [quizData, setQuizData] = useState<{question: string, options: string[], correctIndex: number}[] | null>(null);
+  const [isQuizLoading, setIsQuizLoading] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [showQuizResult, setShowQuizResult] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  
   const endMarkRef = useRef<HTMLDivElement>(null);
   const sessionStartRef = useRef<number>(Date.now());
   const confettiFired = useRef(false);
 
   const book = allBooks.find(b => b.id === id);
   const isFav = book ? favorites.includes(book.id) : false;
+  const isPlayingGlobal = globalAudio.bookId === id && globalAudio.url !== null;
 
   useEffect(() => {
     if (book) {
@@ -123,25 +129,8 @@ export const Reader: React.FC = () => {
   };
 
   const handleTTS = async () => {
-    if (!audioRef.current) return;
-    
-    // Init audio context on mobile
-    if (!audioRef.current.src) {
-      audioRef.current.play().catch(() => {});
-      audioRef.current.pause();
-    }
-
-    if (!audioRef.current.paused && audioRef.current.src) {
-      audioRef.current.pause();
-      setTtsStatus('idle');
-      setIsPlaying(false);
-      return;
-    }
-    
-    if (audioRef.current.paused && audioRef.current.src) {
-      audioRef.current.play();
-      setTtsStatus('playing');
-      setIsPlaying(true);
+    if (isPlayingGlobal) {
+      // Just open/close or do nothing, handled by GlobalAudioPlayer
       return;
     }
 
@@ -168,19 +157,8 @@ export const Reader: React.FC = () => {
       const data = await res.json();
       if (data.audioBase64) {
         const wavUrl = getWavUrlFromPcm(data.audioBase64, 24000);
-        audioRef.current.src = wavUrl;
-        
-        audioRef.current.onended = () => {
-          setTtsStatus('idle');
-          setIsPlaying(false);
-        };
-        
-        audioRef.current.play().catch(err => {
-          console.error(err);
-          alert('Vui lòng bấm "Tiếp tục nghe" để phát âm thanh.');
-        });
-        setTtsStatus('playing');
-        setIsPlaying(true);
+        setGlobalAudio({ url: wavUrl, title: book.title, bookId: book.id });
+        setTtsStatus('idle');
       }
     } catch (error) {
       console.error(error);
@@ -247,10 +225,47 @@ export const Reader: React.FC = () => {
     }
   };
 
+  const handleGenerateQuiz = async () => {
+    setIsQuizLoading(true);
+    const bookContext = `Tên sách: ${book.title}\nTác giả: ${book.author}\nNội dung:\n${book.content || book.desc || ""}`.substring(0, 5000);
+    
+    try {
+      const res = await fetch('/api/generate-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: bookContext })
+      });
+      
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      setQuizData(data);
+      setQuizAnswers({});
+      setShowQuizResult(false);
+    } catch (error) {
+      console.error(error);
+      alert("Không thể tạo câu hỏi lúc này. Bạn thử lại sau nhé!");
+    } finally {
+      setIsQuizLoading(false);
+    }
+  };
+
+  const submitQuiz = () => {
+    if (!quizData) return;
+    let score = 0;
+    quizData.forEach((q, i) => {
+      if (quizAnswers[i] === q.correctIndex) score++;
+    });
+    setQuizScore(score);
+    setShowQuizResult(true);
+    
+    if (score > 0) {
+      updateStats(score * 10, 0); // 10 minutes XP per correct answer
+      confetti({ particleCount: score * 50, spread: 60, origin: { y: 0.6 } });
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto pb-32 animate-in fade-in">
-      <audio ref={audioRef} className="hidden" />
-      
       <button 
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 mb-6 text-muted font-bold hover:text-primary transition-colors bg-surface px-5 py-2.5 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 w-fit hover:shadow-md"
@@ -279,7 +294,6 @@ export const Reader: React.FC = () => {
           <Heart size={20} fill={isFav ? 'currentColor' : 'none'} />
         </button>
       </div>
-
       <h1 className="font-serif text-3xl md:text-4xl font-extrabold mb-2 text-ink leading-tight">{book.title}</h1>
       
       <div className="flex flex-wrap items-center gap-4 mb-8">
@@ -288,12 +302,12 @@ export const Reader: React.FC = () => {
         {hasTextContent && (
           <button 
             onClick={handleTTS}
-            disabled={ttsStatus === 'loading'}
+            disabled={ttsStatus === 'loading' || isPlayingGlobal}
             className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-full font-bold shadow-md shadow-accent/20 hover:shadow-lg transition-all active:scale-95 disabled:opacity-70"
           >
-            {ttsStatus === 'idle' && <span>🔊 Nghe AI Đọc</span>}
+            {ttsStatus === 'idle' && !isPlayingGlobal && <span>🔊 Nghe AI Đọc</span>}
             {ttsStatus === 'loading' && <span>⏳ Đang tạo...</span>}
-            {ttsStatus === 'playing' && <span>⏸️ Đang đọc...</span>}
+            {isPlayingGlobal && <span>🎧 Đang phát nền</span>}
           </button>
         )}
       </div>
@@ -450,6 +464,94 @@ export const Reader: React.FC = () => {
           )}
         </div>
       </div>
+      {/* AI Quiz Section */}
+      {showGamification && (
+        <div className="mt-8 bg-gradient-to-tr from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-emerald-100 dark:border-emerald-900/50">
+          <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-emerald-700 dark:text-emerald-400">
+            <span className="text-2xl">🎯</span> Thử Thách Trí Tuệ (AI Quiz)
+          </h2>
+          
+          {!quizData && !isQuizLoading && (
+            <div className="text-center py-6">
+              <p className="text-emerald-800/80 dark:text-emerald-200/80 mb-4 font-medium">Bạn đã hoàn thành cuốn sách! Hãy để AI tạo ra 3 câu hỏi để kiểm tra trí nhớ của bạn và nhận thêm XP nhé!</p>
+              <button 
+                onClick={handleGenerateQuiz}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-full transition-transform active:scale-95 shadow-md"
+              >
+                Bắt đầu bài kiểm tra
+              </button>
+            </div>
+          )}
+
+          {isQuizLoading && (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+
+          {quizData && (
+            <div className="space-y-6">
+              {quizData.map((q, i) => (
+                <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <p className="font-bold text-ink mb-4">{i + 1}. {q.question}</p>
+                  <div className="space-y-2">
+                    {q.options.map((opt, optIdx) => {
+                      const isSelected = quizAnswers[i] === optIdx;
+                      let optionClass = "w-full text-left p-3 rounded-xl border transition-colors ";
+                      
+                      if (showQuizResult) {
+                        if (optIdx === q.correctIndex) {
+                          optionClass += "bg-emerald-100 border-emerald-500 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
+                        } else if (isSelected) {
+                          optionClass += "bg-red-100 border-red-500 text-red-800 dark:bg-red-900/40 dark:text-red-200";
+                        } else {
+                          optionClass += "border-slate-200 dark:border-slate-700 opacity-50";
+                        }
+                      } else {
+                        optionClass += isSelected 
+                          ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-500" 
+                          : "border-slate-200 hover:border-emerald-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-ink";
+                      }
+
+                      return (
+                        <button
+                          key={optIdx}
+                          disabled={showQuizResult}
+                          onClick={() => setQuizAnswers(prev => ({...prev, [i]: optIdx}))}
+                          className={optionClass}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {!showQuizResult ? (
+                <button
+                  onClick={submitQuiz}
+                  disabled={Object.keys(quizAnswers).length < quizData.length}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Nộp bài
+                </button>
+              ) : (
+                <div className="text-center bg-white dark:bg-slate-900 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                  <p className="text-xl font-bold mb-2">Bạn trả lời đúng {quizScore}/{quizData.length} câu!</p>
+                  {quizScore > 0 && <p className="text-emerald-600 font-bold">+ {quizScore * 10} Phút XP vào Cây Tri Thức</p>}
+                  <button 
+                    onClick={handleGenerateQuiz}
+                    className="mt-4 px-6 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-full font-bold transition-colors"
+                  >
+                    Thử bộ câu hỏi khác
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Gamification Toast */}
       {showGamification && (

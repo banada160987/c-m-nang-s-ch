@@ -11,6 +11,8 @@ import { Reader } from './pages/Reader';
 import { Guide } from './pages/Guide';
 import { Leaderboard } from './pages/Leaderboard';
 
+import { GlobalAudioPlayer } from './components/GlobalAudioPlayer';
+
 export default function App() {
   return (
     <AppProvider>
@@ -28,6 +30,7 @@ export default function App() {
           <Route path="/reader/:id" element={<Reader />} />
         </Routes>
       </BrowserRouter>
+      <GlobalAudioPlayer />
     </AppProvider>
   );
 }
