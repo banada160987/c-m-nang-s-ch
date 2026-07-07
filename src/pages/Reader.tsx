@@ -411,23 +411,27 @@ export const Reader: React.FC = () => {
       <div 
         className={`flex items-center flex-wrap gap-2 mb-8 bg-surface p-3 rounded-2xl sticky top-4 z-40 shadow-sm border border-slate-200 dark:border-slate-700 transition-transform duration-300 ${showControls ? 'translate-y-0' : '-translate-y-[150%]'}`}
       >
-        <button onClick={() => setFontSize(f => Math.min(2.0, f + 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
-          <Type size={18} /> +
-        </button>
-        <button onClick={() => setFontSize(f => Math.max(0.8, f - 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
-          <Type size={14} /> -
-        </button>
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-        <button onClick={() => setViewMode(v => v === 'scroll' ? 'pages' : 'scroll')} className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors" title="Chế độ Đọc">
-          {viewMode === 'scroll' ? <ScrollText size={20} /> : <BookOpen size={20} />}
-        </button>
-        <button onClick={() => setIsImmersive(true)} className="p-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors" title="Chế độ Đắm chìm">
-          <Maximize2 size={20} />
-        </button>
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-        <button onClick={() => setDyslexiaMode(!dyslexiaMode)} className={`p-2 rounded-xl transition-colors flex items-center gap-1 font-bold ${dyslexiaMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800 hover:text-primary'}`} title="Chế độ Hỗ trợ Khó Đọc (Dyslexia)">
-          <Eye size={20} />
-        </button>
+        {!book.pdfUrl && (
+          <>
+            <button onClick={() => setFontSize(f => Math.min(2.0, f + 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
+              <Type size={18} /> +
+            </button>
+            <button onClick={() => setFontSize(f => Math.max(0.8, f - 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
+              <Type size={14} /> -
+            </button>
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button onClick={() => setViewMode(v => v === 'scroll' ? 'pages' : 'scroll')} className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors" title="Chế độ Đọc">
+              {viewMode === 'scroll' ? <ScrollText size={20} /> : <BookOpen size={20} />}
+            </button>
+            <button onClick={() => setIsImmersive(true)} className="p-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors" title="Chế độ Đắm chìm">
+              <Maximize2 size={20} />
+            </button>
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button onClick={() => setDyslexiaMode(!dyslexiaMode)} className={`p-2 rounded-xl transition-colors flex items-center gap-1 font-bold ${dyslexiaMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800 hover:text-primary'}`} title="Chế độ Hỗ trợ Khó Đọc (Dyslexia)">
+              <Eye size={20} />
+            </button>
+          </>
+        )}
         <button onClick={toggleDarkMode} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors">
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
