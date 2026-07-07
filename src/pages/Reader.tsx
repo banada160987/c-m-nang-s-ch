@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Feather, Sparkles, Lightbulb, Headphones, Mic, MicOff, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX, Eye, Network, Layers } from 'lucide-react';
+import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Feather, Sparkles, Lightbulb, Headphones, Mic, MicOff, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX, Eye, Network, Layers, BrainCircuit } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Mermaid } from '../components/Mermaid';
 import { getReviews, addReview, BookReview } from '../services/reviewService';
