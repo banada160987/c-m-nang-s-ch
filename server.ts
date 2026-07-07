@@ -202,6 +202,32 @@ ${context}`;
     }
   });
 
+  // AI Book Matchmaker
+  app.post("/api/suggest-book", async (req, res) => {
+    try {
+      const { age, query, booksContext } = req.body;
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+      });
+      
+      const prompt = `Bạn là một chuyên gia giáo dục và tâm lý trẻ em. Một phụ huynh/học sinh thuộc nhóm tuổi ${age} đang tìm sách với yêu cầu: "${query}".
+Hãy phân tích yêu cầu này, và đối chiếu với danh sách sách hiện có dưới đây. Chọn ra 1-2 cuốn sách phù hợp nhất và giải thích ngắn gọn, thuyết phục lý do vì sao cuốn sách đó tốt cho sự phát triển của trẻ. Trả lời bằng tiếng Việt, xưng "Hệ thống" hoặc "Chuyên gia".
+Danh sách sách hiện có:
+${booksContext}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      res.json({ reply: response.text });
+    } catch (error) {
+      console.error("Suggest Book Error:", error);
+      res.status(500).json({ error: "Lỗi tư vấn sách" });
+    }
+  });
+
   app.post("/api/generate-quiz", async (req, res) => {
     try {
       const { context } = req.body;
