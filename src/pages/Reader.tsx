@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX } from 'lucide-react';
+import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX, Eye, Network } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Mermaid } from '../components/Mermaid';
 import { getReviews, addReview, BookReview } from '../services/reviewService';
 
 export const Reader: React.FC = () => {
@@ -42,6 +43,11 @@ export const Reader: React.FC = () => {
   const [dictLoading, setDictLoading] = useState(false);
   const [dictPos, setDictPos] = useState({ x: 0, y: 0 });
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // KHKT Features
+  const [dyslexiaMode, setDyslexiaMode] = useState(false);
+  const [mindmapCode, setMindmapCode] = useState<string | null>(null);
+  const [isMindmapLoading, setIsMindmapLoading] = useState(false);
 
   const endMarkRef = useRef<HTMLDivElement>(null);
   const sessionStartRef = useRef<number>(Date.now());
@@ -261,7 +267,7 @@ export const Reader: React.FC = () => {
     setIsAiLoading(true);
 
     try {
-      const bookContext = `Tên sách: ${book?.title}\nTác giả: ${book?.author}\nMô tả: ${book?.desc}\nNội dung (một phần): ${book?.content ? book.content.substring(0, 1000) : 'Không có'}`;
+      const bookContext = `Bạn đang đóng vai là Tác giả của cuốn sách hoặc Nhân vật chính. Hãy trả lời câu hỏi của độc giả bằng giọng điệu kể chuyện, xưng hô gần gũi, thân thiện. \nThông tin sách: Tên sách: ${book?.title}\nTác giả: ${book?.author}\nMô tả: ${book?.desc}\nNội dung (một phần): ${book?.content ? book.content.substring(0, 1000) : 'Không có'}`;
       const res = await fetch('/api/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -304,6 +310,28 @@ export const Reader: React.FC = () => {
     }
   };
 
+  const handleGenerateMindmap = async () => {
+    setIsMindmapLoading(true);
+    const bookContext = `Tên sách: ${book.title}\nTác giả: ${book.author}\nMô tả: ${book.desc || ''}\n${book.content || ''}`.substring(0, 3000);
+    
+    try {
+      const res = await fetch('/api/generate-mindmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: bookContext })
+      });
+      
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      setMindmapCode(data.mermaid);
+    } catch (error) {
+      console.error(error);
+      alert("Không thể tạo sơ đồ tư duy lúc này. Bạn thử lại sau nhé!");
+    } finally {
+      setIsMindmapLoading(false);
+    }
+  };
+
   const submitQuiz = () => {
     if (!quizData) return;
     let score = 0;
@@ -336,7 +364,7 @@ export const Reader: React.FC = () => {
           
           <div 
             onMouseUp={handleTextSelection}
-            className="text-slate-300 leading-loose transition-all font-serif selection:bg-emerald-500/30 selection:text-emerald-100"
+            className={`text-slate-300 leading-loose transition-all font-serif selection:bg-emerald-500/30 selection:text-emerald-100 ${dyslexiaMode ? 'font-sans tracking-[0.1em]' : ''}`}
             style={{ fontSize: (fontSize + 0.2) + 'rem' }}
           >
             {book.content ? (
@@ -397,6 +425,9 @@ export const Reader: React.FC = () => {
           <Maximize2 size={20} />
         </button>
         <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+        <button onClick={() => setDyslexiaMode(!dyslexiaMode)} className={`p-2 rounded-xl transition-colors flex items-center gap-1 font-bold ${dyslexiaMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800 hover:text-primary'}`} title="Chế độ Hỗ trợ Khó Đọc (Dyslexia)">
+          <Eye size={20} />
+        </button>
         <button onClick={toggleDarkMode} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors">
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
@@ -433,10 +464,14 @@ export const Reader: React.FC = () => {
       ) : (
         <div 
           onMouseUp={handleTextSelection}
-          className={`text-ink leading-relaxed transition-all selection:bg-emerald-200 dark:selection:bg-emerald-900/50 ${
+          className={`leading-relaxed transition-all selection:bg-emerald-200 dark:selection:bg-emerald-900/50 ${
             viewMode === 'pages' 
               ? 'h-[75vh] overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-8' 
               : ''
+          } ${
+            dyslexiaMode 
+              ? 'font-sans tracking-[0.15em] leading-[2.5] bg-[#FFFDD0] text-[#111] p-6 md:p-10 rounded-3xl shadow-inner dark:bg-slate-900 dark:text-slate-100' 
+              : 'text-ink'
           }`}
           style={{ 
             fontSize: fontSize + 'rem',
@@ -485,7 +520,7 @@ export const Reader: React.FC = () => {
       {/* AI Chat Section */}
       <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-indigo-100 dark:border-indigo-900/50">
         <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-indigo-700 dark:text-indigo-400">
-          <Bot size={28} className="text-indigo-600 dark:text-indigo-400" /> Trợ lý AI (Hỏi đáp về sách)
+          <Bot size={28} className="text-indigo-600 dark:text-indigo-400" /> Trò chuyện cùng Tác giả (Roleplay AI)
         </h2>
         
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-inner mb-4 overflow-hidden border border-slate-100 dark:border-slate-800">
@@ -494,7 +529,7 @@ export const Reader: React.FC = () => {
               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-70">
                 <Bot size={48} className="opacity-50 mb-2" />
                 <p>Hãy hỏi tôi bất kỳ điều gì về cuốn sách này!</p>
-                <p className="text-sm">VD: "Hãy tóm tắt ngắn gọn cuốn sách"</p>
+                <p className="text-sm">VD: "Chào tác giả, điều gì đã truyền cảm hứng để tác giả viết cuốn sách này?"</p>
               </div>
             ) : (
               chatMessages.map((msg, i) => (
@@ -696,6 +731,37 @@ export const Reader: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* AI Mindmap Section */}
+      <div className="mt-8 bg-gradient-to-tr from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-sky-100 dark:border-sky-900/50">
+        <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-sky-700 dark:text-sky-400">
+          <Network size={28} className="text-sky-600 dark:text-sky-400" /> Sơ Đồ Tư Duy (AI Mindmap)
+        </h2>
+        
+        {!mindmapCode && !isMindmapLoading && (
+          <div className="text-center py-6">
+            <p className="text-sky-800/80 dark:text-sky-200/80 mb-4 font-medium">Bạn muốn tổng hợp nhanh kiến thức cuốn sách này? Hãy để AI vẽ Sơ đồ tư duy cho bạn nhé!</p>
+            <button 
+              onClick={handleGenerateMindmap}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-full transition-transform active:scale-95 shadow-md"
+            >
+              Vẽ Sơ Đồ Tư Duy
+            </button>
+          </div>
+        )}
+
+        {isMindmapLoading && (
+          <div className="flex justify-center py-10">
+            <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {mindmapCode && (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-sky-200 dark:border-sky-800 shadow-sm overflow-hidden">
+            <Mermaid chart={mindmapCode} />
+          </div>
+        )}
+      </div>
 
       {/* Gamification Toast */}
       {showGamification && (

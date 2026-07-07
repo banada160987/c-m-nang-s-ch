@@ -126,6 +126,48 @@ async function startServer() {
     }
   });
 
+  // AI Mindmap Generator
+  app.post("/api/generate-mindmap", async (req, res) => {
+    try {
+      const { context } = req.body;
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+      });
+      
+      const prompt = `Bạn là một chuyên gia vẽ sơ đồ tư duy. Hãy tóm tắt nội dung cuốn sách sau bằng cú pháp MERMAID (định dạng mindmap). 
+Chỉ trả về ĐÚNG đoạn code mermaid (bắt đầu bằng chữ 'mindmap', không có dấu ngoặc kép hay markdown block \`\`\`).
+Không giải thích gì thêm.
+Nếu tên node có khoảng trắng, không cần dùng dấu ngoặc kép. Không dùng các ký tự đặc biệt như ngoặc đơn ( ) hay ngoặc vuông [ ] trong tên node để tránh lỗi cú pháp.
+
+Mẫu cú pháp Mermaid chuẩn:
+mindmap
+  Root
+    Node1
+      SubNode1
+    Node2
+
+Nội dung cuốn sách:
+${context}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      let mermaidCode = response.text.trim();
+      // Remove markdown block if AI still includes it
+      if (mermaidCode.startsWith('\`\`\`')) {
+        mermaidCode = mermaidCode.replace(/^\`\`\`(mermaid)?\n?/, '').replace(/\n?\`\`\`$/, '');
+      }
+
+      res.json({ mermaid: mermaidCode });
+    } catch (error) {
+      console.error("Mindmap Error:", error);
+      res.status(500).json({ error: "Lỗi tạo sơ đồ tư duy" });
+    }
+  });
+
   app.post("/api/generate-quiz", async (req, res) => {
     try {
       const { context } = req.body;
