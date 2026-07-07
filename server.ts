@@ -96,7 +96,33 @@ async function startServer() {
       res.json({ reply: response.text });
     } catch (error) {
       console.error("Ask AI Error:", error);
-      res.status(500).json({ error: "Failed to generate AI response" });
+      res.status(500).json({ error: "Lỗi kết nối AI" });
+    }
+  });
+
+  // Dictionary Tooltip
+  app.post("/api/dictionary", async (req, res) => {
+    try {
+      const { word, context } = req.body;
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+      const prompt = `Bạn là một từ điển dành cho học sinh. Hãy giải thích ngắn gọn, dễ hiểu từ sau: "${word}". \n\nNgữ cảnh trong sách (nếu có): ${context}\n\nTrả lời ngắn gọn trong 1-2 câu.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      res.json({ definition: response.text });
+    } catch (error) {
+      console.error("Dictionary Error:", error);
+      res.status(500).json({ error: "Lỗi kết nối AI" });
     }
   });
 

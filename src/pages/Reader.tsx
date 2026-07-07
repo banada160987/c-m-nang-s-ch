@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic } from 'lucide-react';
+import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getReviews, addReview, BookReview } from '../services/reviewService';
 
@@ -33,6 +33,16 @@ export const Reader: React.FC = () => {
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   
+  // New Features State
+  const [isImmersive, setIsImmersive] = useState(false);
+  const [ambientAudio, setAmbientAudio] = useState(false);
+  const [viewMode, setViewMode] = useState<'scroll' | 'pages'>('scroll');
+  const [dictWord, setDictWord] = useState<string | null>(null);
+  const [dictDef, setDictDef] = useState<string | null>(null);
+  const [dictLoading, setDictLoading] = useState(false);
+  const [dictPos, setDictPos] = useState({ x: 0, y: 0 });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const endMarkRef = useRef<HTMLDivElement>(null);
   const sessionStartRef = useRef<number>(Date.now());
   const confettiFired = useRef(false);
@@ -99,6 +109,51 @@ export const Reader: React.FC = () => {
       }
     };
   }, [updateStats]);
+
+  useEffect(() => {
+    if (ambientAudio) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/05/16/audio_9b6574aefd.mp3'); // Lo-Fi study music
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.3;
+      }
+      audioRef.current.play().catch(()=>setAmbientAudio(false));
+    } else {
+      audioRef.current?.pause();
+    }
+    return () => audioRef.current?.pause();
+  }, [ambientAudio]);
+
+  const handleTextSelection = async () => {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+    if (text && text.length > 1 && text.length < 30) {
+      const range = selection?.getRangeAt(0);
+      const rect = range?.getBoundingClientRect();
+      if (rect) {
+        setDictPos({ x: rect.left + rect.width / 2, y: rect.top + window.scrollY - 10 });
+        setDictWord(text);
+        setDictLoading(true);
+        setDictDef(null);
+        
+        try {
+          const res = await fetch('/api/dictionary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: text, context: book?.title || "" })
+          });
+          const data = await res.json();
+          setDictDef(data.definition);
+        } catch (e) {
+          setDictDef("Lỗi tra từ. Vui lòng thử lại.");
+        } finally {
+          setDictLoading(false);
+        }
+      }
+    } else {
+      setDictWord(null);
+    }
+  };
 
   if (!book) {
     return <div className="p-8 text-center">Không tìm thấy sách.</div>;
@@ -264,8 +319,59 @@ export const Reader: React.FC = () => {
     }
   };
 
+  if (isImmersive) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-slate-900 text-slate-200 overflow-y-auto pt-20 px-4 md:px-20 pb-40">
+        <div className="max-w-4xl mx-auto relative">
+          <div className="fixed top-6 right-6 flex gap-4 opacity-30 hover:opacity-100 transition-opacity">
+            <button onClick={() => setAmbientAudio(!ambientAudio)} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700">
+              {ambientAudio ? <Volume2 size={24} /> : <VolumeX size={24} />}
+            </button>
+            <button onClick={() => setIsImmersive(false)} className="p-3 bg-slate-800 rounded-full hover:bg-slate-700">
+              <Minimize2 size={24} />
+            </button>
+          </div>
+          
+          <h1 className="font-serif text-4xl md:text-5xl font-extrabold mb-12 text-center text-slate-100 opacity-50">{book.title}</h1>
+          
+          <div 
+            onMouseUp={handleTextSelection}
+            className="text-slate-300 leading-loose transition-all font-serif selection:bg-emerald-500/30 selection:text-emerald-100"
+            style={{ fontSize: (fontSize + 0.2) + 'rem' }}
+          >
+            {book.content ? (
+              <div dangerouslySetInnerHTML={{ __html: book.content.replace(/\n/g, '<br/>') }} />
+            ) : book.desc ? (
+              <div dangerouslySetInnerHTML={{ __html: book.desc.replace(/\n/g, '<br/>') }} />
+            ) : null}
+          </div>
+        </div>
+
+        {dictWord && (
+          <div 
+            className="absolute z-[110] bg-slate-800 text-slate-100 p-4 rounded-2xl shadow-2xl border border-slate-700 max-w-xs transform -translate-x-1/2 -translate-y-full mb-4 animate-in fade-in zoom-in-95"
+            style={{ left: dictPos.x, top: dictPos.y }}
+          >
+            <div className="font-bold text-emerald-400 mb-1 border-b border-slate-700 pb-1 flex items-center justify-between">
+              <span>{dictWord}</span>
+              <button onClick={() => setDictWord(null)} className="text-slate-500 hover:text-slate-300">×</button>
+            </div>
+            {dictLoading ? (
+              <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+                <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> AI đang suy nghĩ...
+              </div>
+            ) : (
+              <p className="text-sm leading-relaxed">{dictDef}</p>
+            )}
+            <div className="absolute w-3 h-3 bg-slate-800 border-b border-r border-slate-700 transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto pb-32 animate-in fade-in">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto pb-32 animate-in fade-in relative">
       <button 
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 mb-6 text-muted font-bold hover:text-primary transition-colors bg-surface px-5 py-2.5 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 w-fit hover:shadow-md"
@@ -275,7 +381,7 @@ export const Reader: React.FC = () => {
       </button>
 
       <div 
-        className={`flex items-center flex-wrap gap-2 mb-8 bg-surface p-3 rounded-2xl sticky top-4 z-10 shadow-sm border border-slate-200 dark:border-slate-700 transition-transform duration-300 ${showControls ? 'translate-y-0' : '-translate-y-[150%]'}`}
+        className={`flex items-center flex-wrap gap-2 mb-8 bg-surface p-3 rounded-2xl sticky top-4 z-40 shadow-sm border border-slate-200 dark:border-slate-700 transition-transform duration-300 ${showControls ? 'translate-y-0' : '-translate-y-[150%]'}`}
       >
         <button onClick={() => setFontSize(f => Math.min(2.0, f + 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
           <Type size={18} /> +
@@ -283,6 +389,14 @@ export const Reader: React.FC = () => {
         <button onClick={() => setFontSize(f => Math.max(0.8, f - 0.1))} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors flex items-center gap-1 font-bold">
           <Type size={14} /> -
         </button>
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+        <button onClick={() => setViewMode(v => v === 'scroll' ? 'pages' : 'scroll')} className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors" title="Chế độ Đọc">
+          {viewMode === 'scroll' ? <ScrollText size={20} /> : <BookOpen size={20} />}
+        </button>
+        <button onClick={() => setIsImmersive(true)} className="p-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors" title="Chế độ Đắm chìm">
+          <Maximize2 size={20} />
+        </button>
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
         <button onClick={toggleDarkMode} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-primary transition-colors">
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
@@ -318,21 +432,51 @@ export const Reader: React.FC = () => {
         </div>
       ) : (
         <div 
-          className="text-ink leading-relaxed transition-all"
-          style={{ fontSize: fontSize + 'rem' }}
+          onMouseUp={handleTextSelection}
+          className={`text-ink leading-relaxed transition-all selection:bg-emerald-200 dark:selection:bg-emerald-900/50 ${
+            viewMode === 'pages' 
+              ? 'h-[75vh] overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-8' 
+              : ''
+          }`}
+          style={{ 
+            fontSize: fontSize + 'rem',
+            columnWidth: viewMode === 'pages' ? 'calc(100vw - 32px)' : 'auto',
+            columnGap: viewMode === 'pages' ? '32px' : 'normal',
+            maxWidth: viewMode === 'pages' ? '100%' : '100%',
+          }}
         >
           {book.content ? (
-            <div dangerouslySetInnerHTML={{ __html: book.content.replace(/\\n/g, '<br/>') }} />
+            <div dangerouslySetInnerHTML={{ __html: book.content.replace(/\n/g, '<br/>') }} className="snap-start" />
           ) : book.desc ? (
             <>
-              <div className="bg-secondary/10 text-secondary italic p-4 border-l-4 border-secondary rounded-r-xl mb-6 font-semibold">
+              <div className="bg-secondary/10 text-secondary italic p-4 border-l-4 border-secondary rounded-r-xl mb-6 font-semibold snap-start">
                 Ghi chú: Đây chỉ là phần giới thiệu ngắn. Bản đọc chi tiết chưa được tải lên hệ thống.
               </div>
-              <div dangerouslySetInnerHTML={{ __html: book.desc.replace(/\\n/g, '<br/>') }} />
+              <div dangerouslySetInnerHTML={{ __html: book.desc.replace(/\n/g, '<br/>') }} className="snap-start" />
             </>
           ) : (
-            <p className="text-muted italic text-center py-10">Nội dung văn bản chưa được cập nhật cho cuốn sách này.</p>
+            <p className="text-muted italic text-center py-10 snap-start">Nội dung văn bản chưa được cập nhật cho cuốn sách này.</p>
           )}
+        </div>
+      )}
+
+      {dictWord && !isImmersive && (
+        <div 
+          className="absolute z-50 bg-white dark:bg-slate-800 text-ink p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 max-w-xs transform -translate-x-1/2 -translate-y-full mb-4 animate-in fade-in zoom-in-95"
+          style={{ left: dictPos.x, top: dictPos.y }}
+        >
+          <div className="font-bold text-emerald-600 dark:text-emerald-400 mb-1 border-b border-slate-100 dark:border-slate-700 pb-1 flex items-center justify-between">
+            <span>{dictWord}</span>
+            <button onClick={() => setDictWord(null)} className="text-slate-400 hover:text-slate-600">×</button>
+          </div>
+          {dictLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted py-2">
+              <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> AI đang giải nghĩa...
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed">{dictDef}</p>
+          )}
+          <div className="absolute w-3 h-3 bg-white dark:bg-slate-800 border-b border-r border-slate-200 dark:border-slate-700 transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>
         </div>
       )}
 
