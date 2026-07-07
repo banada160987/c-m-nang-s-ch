@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Bot, Sparkles, BrainCircuit, Headphones, Mic, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX, Eye, Network } from 'lucide-react';
+import { Heart, ArrowLeft, Sun, Moon, Type, MessageCircle, Send, Feather, Sparkles, Lightbulb, Headphones, Mic, MicOff, Maximize2, Minimize2, BookOpen, ScrollText, Volume2, VolumeX, Eye, Network, Layers } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Mermaid } from '../components/Mermaid';
 import { getReviews, addReview, BookReview } from '../services/reviewService';
@@ -48,6 +48,13 @@ export const Reader: React.FC = () => {
   const [dyslexiaMode, setDyslexiaMode] = useState(false);
   const [mindmapCode, setMindmapCode] = useState<string | null>(null);
   const [isMindmapLoading, setIsMindmapLoading] = useState(false);
+  
+  // Giao diện thuần Việt - Trợ lý & Thẻ ghi nhớ
+  const [isListening, setIsListening] = useState(false);
+  const [flashcards, setFlashcards] = useState<{front: string, back: string}[] | null>(null);
+  const [isFlashcardLoading, setIsFlashcardLoading] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
 
   const endMarkRef = useRef<HTMLDivElement>(null);
   const sessionStartRef = useRef<number>(Date.now());
@@ -332,6 +339,47 @@ export const Reader: React.FC = () => {
     }
   };
 
+  const handleVoiceCommand = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói (Khuyên dùng Google Chrome).");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.continuous = false;
+    
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setChatInput(transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+  };
+
+  const handleGenerateFlashcards = async () => {
+    setIsFlashcardLoading(true);
+    const bookContext = `Tên sách: ${book.title}\nTác giả: ${book.author}\nMô tả: ${book.desc || ''}\n${book.content || ''}`.substring(0, 3000);
+    try {
+      const res = await fetch('/api/generate-flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: bookContext })
+      });
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      setFlashcards(data);
+      setActiveCardIndex(0);
+      setIsCardFlipped(false);
+    } catch (error) {
+      console.error(error);
+      alert("Không thể tạo thẻ ghi nhớ lúc này.");
+    } finally {
+      setIsFlashcardLoading(false);
+    }
+  };
+
   const submitQuiz = () => {
     if (!quizData) return;
     let score = 0;
@@ -386,7 +434,7 @@ export const Reader: React.FC = () => {
             </div>
             {dictLoading ? (
               <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
-                <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> AI đang suy nghĩ...
+                <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> Đang tìm câu trả lời...
               </div>
             ) : (
               <p className="text-sm leading-relaxed">{dictDef}</p>
@@ -427,7 +475,7 @@ export const Reader: React.FC = () => {
               <Maximize2 size={20} />
             </button>
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <button onClick={() => setDyslexiaMode(!dyslexiaMode)} className={`p-2 rounded-xl transition-colors flex items-center gap-1 font-bold ${dyslexiaMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800 hover:text-primary'}`} title="Chế độ Hỗ trợ Khó Đọc (Dyslexia)">
+            <button onClick={() => setDyslexiaMode(!dyslexiaMode)} className={`p-2 rounded-xl transition-colors flex items-center gap-1 font-bold ${dyslexiaMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800 hover:text-primary'}`} title="Chế độ Dễ Đọc (Dành cho mắt yếu)">
               <Eye size={20} />
             </button>
           </>
@@ -454,8 +502,8 @@ export const Reader: React.FC = () => {
             disabled={ttsStatus === 'loading' || isPlayingGlobal}
             className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-full font-bold shadow-md shadow-accent/20 hover:shadow-lg transition-all active:scale-95 disabled:opacity-70"
           >
-            {ttsStatus === 'idle' && !isPlayingGlobal && <><Headphones size={20} /><span>Nghe AI Đọc</span></>}
-            {ttsStatus === 'loading' && <><Sparkles size={20} className="animate-pulse" /><span>Đang tạo...</span></>}
+            {ttsStatus === 'idle' && !isPlayingGlobal && <><Headphones size={20} /><span>Nghe Đọc Sách</span></>}
+            {ttsStatus === 'loading' && <><Sparkles size={20} className="animate-pulse" /><span>Đang chuẩn bị...</span></>}
             {isPlayingGlobal && <><Mic size={20} className="animate-bounce" /><span>Đang phát nền</span></>}
           </button>
         )}
@@ -510,7 +558,7 @@ export const Reader: React.FC = () => {
           </div>
           {dictLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted py-2">
-              <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> AI đang giải nghĩa...
+              <BrainCircuit size={14} className="animate-pulse text-emerald-500" /> Đang tra từ điển...
             </div>
           ) : (
             <p className="text-sm leading-relaxed">{dictDef}</p>
@@ -524,16 +572,16 @@ export const Reader: React.FC = () => {
       {/* AI Chat Section */}
       <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-indigo-100 dark:border-indigo-900/50">
         <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-indigo-700 dark:text-indigo-400">
-          <Bot size={28} className="text-indigo-600 dark:text-indigo-400" /> Trò chuyện cùng Tác giả (Roleplay AI)
+          <Feather size={28} className="text-indigo-600 dark:text-indigo-400" /> Góc Trò Chuyện Cùng Tác Giả
         </h2>
         
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-inner mb-4 overflow-hidden border border-slate-100 dark:border-slate-800">
           <div className="h-[300px] overflow-y-auto p-4 space-y-4">
             {chatMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-70">
-                <Bot size={48} className="opacity-50 mb-2" />
+                <Feather size={48} className="opacity-50 mb-2" />
                 <p>Hãy hỏi tôi bất kỳ điều gì về cuốn sách này!</p>
-                <p className="text-sm">VD: "Chào tác giả, điều gì đã truyền cảm hứng để tác giả viết cuốn sách này?"</p>
+                <p className="text-sm text-center px-4">VD: "Chào tác giả, điều gì đã truyền cảm hứng để tác giả viết cuốn sách này?"</p>
               </div>
             ) : (
               chatMessages.map((msg, i) => (
