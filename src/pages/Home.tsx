@@ -100,8 +100,8 @@ export const Home: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. Featured Book */}
-      {featuredBook && (
+      {/* 3. Featured Book (Temporarily Hidden) */}
+      {/* {featuredBook && (
         <div className="relative rounded-3xl overflow-hidden mb-8 bg-gradient-to-br from-emerald-600 to-emerald-400 text-white shadow-xl shadow-emerald-500/20 p-8 md:p-12 min-h-[250px] flex flex-col justify-center">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent mix-blend-overlay"></div>
           <div className="relative z-10 max-w-lg">
@@ -122,7 +122,7 @@ export const Home: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Statistics Section */}
       <div className="mb-10 bg-surface rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
