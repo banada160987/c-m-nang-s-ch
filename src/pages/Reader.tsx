@@ -466,7 +466,7 @@ export const Reader: React.FC = () => {
           onMouseUp={handleTextSelection}
           className={`leading-relaxed transition-all selection:bg-emerald-200 dark:selection:bg-emerald-900/50 ${
             viewMode === 'pages' 
-              ? 'h-[75vh] overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-8' 
+              ? 'h-[75vh] overflow-x-auto overflow-y-hidden pb-8' 
               : ''
           } ${
             dyslexiaMode 
@@ -475,9 +475,9 @@ export const Reader: React.FC = () => {
           }`}
           style={{ 
             fontSize: fontSize + 'rem',
-            columnWidth: viewMode === 'pages' ? 'calc(100vw - 32px)' : 'auto',
-            columnGap: viewMode === 'pages' ? '32px' : 'normal',
-            maxWidth: viewMode === 'pages' ? '100%' : '100%',
+            columnWidth: viewMode === 'pages' ? '768px' : 'auto',
+            columnGap: viewMode === 'pages' ? '4rem' : 'normal',
+            maxWidth: '100%',
           }}
         >
           {book.content ? (
