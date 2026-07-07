@@ -168,6 +168,40 @@ ${context}`;
     }
   });
 
+  // AI Flashcards Generator
+  app.post("/api/generate-flashcards", async (req, res) => {
+    try {
+      const { context } = req.body;
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+      });
+      
+      const prompt = `Bạn là một chuyên gia giáo dục. Hãy trích xuất từ khóa, nhân vật hoặc sự kiện quan trọng nhất từ nội dung cuốn sách sau và tạo ra 5-10 thẻ ghi nhớ (flashcard).
+Trả về ĐÚNG định dạng JSON array chuẩn, không chứa markdown, không có chữ thừa.
+Định dạng: [{"front": "mặt trước (câu hỏi/từ khóa)", "back": "mặt sau (câu trả lời/định nghĩa)"}]
+
+Nội dung:
+${context}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      let jsonStr = response.text.trim();
+      if (jsonStr.startsWith('\`\`\`')) {
+        jsonStr = jsonStr.replace(/^\`\`\`(json)?\n?/, '').replace(/\n?\`\`\`$/, '');
+      }
+
+      const flashcards = JSON.parse(jsonStr);
+      res.json(flashcards);
+    } catch (error) {
+      console.error("Flashcard Error:", error);
+      res.status(500).json({ error: "Lỗi tạo thẻ ghi nhớ" });
+    }
+  });
+
   app.post("/api/generate-quiz", async (req, res) => {
     try {
       const { context } = req.body;
