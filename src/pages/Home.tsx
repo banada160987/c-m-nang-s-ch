@@ -202,15 +202,15 @@ export const Home: React.FC = () => {
       )}
 
       {/* Copyright Footer */}
-      <div className="mt-16 mb-8 text-center p-6 bg-surface border border-slate-200 dark:border-slate-700/50 rounded-3xl shadow-sm">
-        <div className="text-2xl mb-2 opacity-80">©️</div>
-        <h3 className="font-bold text-ink text-lg uppercase tracking-wider mb-2">Bản quyền thuộc về</h3>
-        <p className="text-primary font-bold text-xl mb-1">Team văn hóa đọc lớp 7A</p>
-        <p className="text-primary font-bold text-lg mb-4">Team KHKT Trường THCS Nguyễn Khuyến</p>
-        <div className="w-16 h-1 bg-slate-200 dark:bg-slate-700 mx-auto mb-4 rounded-full"></div>
-        <p className="text-muted font-semibold">
-          <span className="text-slate-400 mr-2">GVHD:</span>
-          Võ Thị Kim Anh, Nguyễn Tuấn Hiếu
+      <div className="mt-16 mb-8 text-center text-slate-400 dark:text-slate-500">
+        <div className="flex justify-center items-center gap-1.5 mb-2">
+          <span className="text-base">©</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">Bản quyền thuộc về</span>
+        </div>
+        <p className="text-sm font-semibold mb-1">Team Văn Hóa Đọc Lớp 7A — Team KHKT</p>
+        <p className="text-sm font-semibold mb-3">Trường THCS Nguyễn Khuyến</p>
+        <p className="text-xs opacity-70 font-medium">
+          GVHD: Võ Thị Kim Anh, Nguyễn Tuấn Hiếu
         </p>
       </div>
     </div>
