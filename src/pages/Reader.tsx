@@ -699,12 +699,12 @@ export const Reader: React.FC = () => {
       {showGamification && (
         <div className="mt-8 bg-gradient-to-tr from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-emerald-100 dark:border-emerald-900/50">
           <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-emerald-700 dark:text-emerald-400">
-            <BrainCircuit size={28} className="text-emerald-600 dark:text-emerald-400" /> Thử Thách Trí Tuệ (AI Quiz)
+            <BrainCircuit size={28} className="text-emerald-600 dark:text-emerald-400" /> Thử Thách Trí Tuệ
           </h2>
           
           {!quizData && !isQuizLoading && (
             <div className="text-center py-6">
-              <p className="text-emerald-800/80 dark:text-emerald-200/80 mb-4 font-medium">Bạn đã hoàn thành cuốn sách! Hãy để AI tạo ra 3 câu hỏi để kiểm tra trí nhớ của bạn và nhận thêm XP nhé!</p>
+              <p className="text-emerald-800/80 dark:text-emerald-200/80 mb-4 font-medium">Bạn đã hoàn thành cuốn sách! Hệ thống sẽ tự động tạo ra 3 câu hỏi để kiểm tra trí nhớ của bạn và nhận thêm Điểm thưởng (XP) nhé!</p>
               <button 
                 onClick={handleGenerateQuiz}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-full transition-transform active:scale-95 shadow-md"
@@ -787,12 +787,12 @@ export const Reader: React.FC = () => {
       {/* AI Mindmap Section */}
       <div className="mt-8 bg-gradient-to-tr from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/30 rounded-3xl p-6 md:p-8 shadow-sm border border-sky-100 dark:border-sky-900/50">
         <h2 className="text-2xl font-serif font-extrabold flex items-center gap-2 mb-6 text-sky-700 dark:text-sky-400">
-          <Network size={28} className="text-sky-600 dark:text-sky-400" /> Sơ Đồ Tư Duy (AI Mindmap)
+          <Network size={28} className="text-sky-600 dark:text-sky-400" /> Sơ Đồ Tư Duy Tóm Tắt
         </h2>
         
         {!mindmapCode && !isMindmapLoading && (
           <div className="text-center py-6">
-            <p className="text-sky-800/80 dark:text-sky-200/80 mb-4 font-medium">Bạn muốn tổng hợp nhanh kiến thức cuốn sách này? Hãy để AI vẽ Sơ đồ tư duy cho bạn nhé!</p>
+            <p className="text-sky-800/80 dark:text-sky-200/80 mb-4 font-medium">Bạn muốn tổng hợp nhanh kiến thức cuốn sách này? Hệ thống sẽ tự động vẽ Sơ đồ tư duy cho bạn nhé!</p>
             <button 
               onClick={handleGenerateMindmap}
               className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-full transition-transform active:scale-95 shadow-md"
